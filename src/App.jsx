@@ -208,14 +208,16 @@ export default function App() {
 
     if (Math.abs(enteredTotal - jobTotal) > 0.01) {
       setStatusMessage(
-        `Job entry hours (${jobTotal.toFixed(
-          2
-        )}) must equal total hours worked (${enteredTotal.toFixed(2)}).`
+        `Job entry hours (${jobTotal.toFixed(2)}) must equal total hours worked (${enteredTotal.toFixed(2)}).`
       );
       return;
     }
 
     const record = {
+      submissionId:
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`,
       employeeName: employeeName.trim(),
       workDate,
       payPeriod: payPeriod.label,
@@ -237,18 +239,20 @@ export default function App() {
         body: JSON.stringify(record)
       });
 
-      if (!response.ok) {
-        throw new Error("Request failed");
+      const result = await response.json();
+
+      if (!response.ok || !result.ok) {
+        throw new Error(result.message || "Submission failed.");
       }
 
-      setStatusMessage("Submitted successfully.");
+      setStatusMessage(result.message || "Saved successfully.");
       setRegularHoursWorked("");
       setOvertimeHoursWorked("");
       setCallOutHours("");
       setDailyNotes("");
       setEntries([blankEntry()]);
     } catch (error) {
-      setStatusMessage("Submission failed.");
+      setStatusMessage(error.message || "Submission failed.");
     } finally {
       setIsSubmitting(false);
     }
