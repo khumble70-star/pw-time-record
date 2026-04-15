@@ -338,10 +338,52 @@ export default function DailyTimeRecordApp() {
   };
 
   const exportCSV = () => {
-    const rows = [["Name","Date","Pay Period Start","Pay Period End","Regular Hours Worked","Overtime Hours Worked","Call Out Hours","Total Hours","Department","Job Description","Hours","Equipment Used","Status","Notes","Submitted At"]];
-    submittedRecords.forEach((record) => record.entries.forEach((entry) => rows.push([record.employeeName, record.workDate, record.payPeriodStart, record.payPeriodEnd, record.regularHoursWorked, record.overtimeHoursWorked, record.callOutHours, record.totalHoursWorked, entry.department, entry.jobDescription, entry.hours, entry.equipmentUsed, entry.status, entry.notes, record.submittedAt])));
-    const csv = rows.map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(",")).join("
-");
+  const rows = [[
+    "Name",
+    "Date",
+    "Pay Period Start",
+    "Pay Period End",
+    "Regular Hours Worked",
+    "Overtime Hours Worked",
+    "Call Out Hours",
+    "Total Hours",
+    "Department",
+    "Job Description",
+    "Hours",
+    "Equipment Used",
+    "Status",
+    "Notes",
+    "Submitted At"
+  ]];
+
+  submittedRecords.forEach((record) => {
+    record.entries.forEach((entry) => {
+      rows.push([
+        record.employeeName,
+        record.workDate,
+        record.payPeriodStart,
+        record.payPeriodEnd,
+        record.regularHoursWorked,
+        record.overtimeHoursWorked,
+        record.callOutHours,
+        record.totalHoursWorked,
+        entry.department,
+        entry.jobDescription,
+        entry.hours,
+        entry.equipmentUsed,
+        entry.status,
+        entry.notes,
+        record.submittedAt
+      ]);
+    });
+  });
+
+  const csv = rows
+    .map((row) => row.map((cell) => `"${String(cell || "").replaceAll('"', '""')}"`).join(","))
+    .join("\\n");
+
+  downloadFile(`daily-time-records-${todayLocal()}.csv`, csv, "text/csv;charset=utf-8;");
+};
     downloadFile(`daily-time-records-${todayLocal()}.csv`, csv, "text/csv;charset=utf-8;");
   };
 
