@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ClipboardList, Clock3, CheckCircle2, CloudUpload, Plus, Trash2, Star, Printer, Search, Menu } from "lucide-react";
 import { motion } from "framer-motion";
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/REPLACE_WITH_YOUR_DEPLOYMENT/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5N7ESgvEsgG0SMrSRhNx-ujRpCl_-YdVcfXFj_Vk1SpbgfvgNHKPcM5HOVzqwFsVg/exec";
 const SHEET_PLACEHOLDER_NAME = "Town of Highland Public Works Daily Time Record";
 
 const jobCatalog = [
