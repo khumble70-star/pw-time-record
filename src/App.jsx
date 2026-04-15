@@ -384,9 +384,7 @@ export default function DailyTimeRecordApp() {
 
   downloadFile(`daily-time-records-${todayLocal()}.csv`, csv, "text/csv;charset=utf-8;");
 };
-    downloadFile(`daily-time-records-${todayLocal()}.csv`, csv, "text/csv;charset=utf-8;");
-  };
-
+  
   const printPayPeriodReport = () => {
     if (!reportEmployee) return alert("Select an employee for the pay period report.");
     const rowsHtml = payPeriodRecords.map((record) => record.entries.map((entry) => `<tr><td>${formatDate(record.workDate)}</td><td>${entry.department || ""}</td><td>${entry.jobDescription || ""}</td><td>${entry.hours || "0.00"}</td><td>${entry.equipmentUsed || ""}</td><td>${entry.notes || ""}</td></tr>`).join("")).join("");
