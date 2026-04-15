@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw5N7ESgvEsgG0SMrSRhNx-ujRpCl_-YdVcfXFj_Vk1SpbgfvgNHKPcM5HOVzqwFsVg/exec";
 
@@ -15,7 +15,8 @@ const blankEntry = () => ({
   department: "",
   jobDescription: "",
   hours: "",
-  equipmentUsed: ""
+  equipmentUsed: "",
+  notes: ""
 });
 
 const todayLocal = () => {
@@ -43,120 +44,169 @@ function getPayPeriodRange(dateStr) {
 }
 
 export default function App() {
-  const [employeeName, setEmployeeName] = useState("");
+  const [employeeName, setEmployeeName] = useState(() => {
+    return localStorage.getItem("lastEmployeeName") || "";
+  });
+
   const [workDate, setWorkDate] = useState(todayLocal());
+  const [regularHoursWorked, setRegularHoursWorked] = useState("");
+  const [overtimeHoursWorked, setOvertimeHoursWorked] = useState("");
+  const [callOutHours, setCallOutHours] = useState("");
   const [entries, setEntries] = useState([blankEntry()]);
-  const [submittedRecords, setSubmittedRecords] = useState([]);
+  const [statusMessage, setStatusMessage] = useState("");
+
+  useEffect(() => {
+    if (employeeName) {
+      localStorage.setItem("lastEmployeeName", employeeName);
+    }
+  }, [employeeName]);
 
   const payPeriod = useMemo(() => getPayPeriodRange(workDate), [workDate]);
+
+  const totalHoursWorked = useMemo(() => {
+    return (
+      (parseFloat(regularHoursWorked) || 0) +
+      (parseFloat(overtimeHoursWorked) || 0) +
+      (parseFloat(callOutHours) || 0)
+    ).toFixed(2);
+  }, [regularHoursWorked, overtimeHoursWorked, callOutHours]);
 
   const addEntry = () => setEntries([...entries, blankEntry()]);
 
   const removeEntry = (id) => {
-    setEntries(entries.filter(e => e.id !== id));
+    setEntries(entries.length > 1 ? entries.filter(e => e.id !== id) : entries);
   };
 
   const updateEntry = (id, field, value) => {
-    setEntries(entries.map(e => e.id === id ? { ...e, [field]: value } : e));
+    setEntries(entries.map(e => {
+      if (e.id !== id) return e;
+      if (field === "department") return { ...e, department: value, jobDescription: "" };
+      return { ...e, [field]: value };
+    }));
   };
 
   const submitRecord = async () => {
+    if (!employeeName) {
+      setStatusMessage("Enter employee name");
+      return;
+    }
+
     const record = {
       employeeName,
       workDate,
       payPeriod: payPeriod.label,
+      regularHoursWorked,
+      overtimeHoursWorked,
+      callOutHours,
+      totalHoursWorked,
       entries
     };
 
     try {
       await fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify(record)
       });
 
-      alert("Submitted successfully");
-
-      setSubmittedRecords([record, ...submittedRecords]);
+      setStatusMessage("Submitted successfully");
       setEntries([blankEntry()]);
-    } catch (err) {
-      alert("Error submitting");
+    } catch {
+      setStatusMessage("Submission failed");
     }
   };
 
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: "auto", fontFamily: "Arial" }}>
+    <div style={{ maxWidth: 700, margin: "0 auto", padding: 20 }}>
       <h2>Daily Time Record</h2>
 
       <input
-        placeholder="Employee Name"
         value={employeeName}
         onChange={(e) => setEmployeeName(e.target.value)}
-        style={{ width: "100%", marginBottom: 10, padding: 10 }}
+        placeholder="Employee Name"
+        style={{ width: "100%", padding: 10 }}
+        disabled={!!localStorage.getItem("lastEmployeeName")}
       />
+
+      <button
+        onClick={() => {
+          localStorage.removeItem("lastEmployeeName");
+          setEmployeeName("");
+        }}
+        style={{ marginBottom: 10 }}
+      >
+        Change Employee
+      </button>
 
       <input
         type="date"
         value={workDate}
         onChange={(e) => setWorkDate(e.target.value)}
-        style={{ width: "100%", marginBottom: 10, padding: 10 }}
+        style={{ width: "100%", padding: 10 }}
       />
 
-      <div style={{ marginBottom: 15 }}>
+      <div style={{ margin: "10px 0" }}>
         Pay Period: <strong>{payPeriod.label}</strong>
       </div>
 
-      {entries.map(entry => (
-        <div key={entry.id} style={{ border: "1px solid #ccc", padding: 10, marginBottom: 10 }}>
-          <select
-            value={entry.department}
-            onChange={(e) => updateEntry(entry.id, "department", e.target.value)}
-            style={{ width: "100%", marginBottom: 5 }}
-          >
-            <option value="">Department</option>
-            {departments.map(d => <option key={d}>{d}</option>)}
-          </select>
+      <input
+        value={regularHoursWorked}
+        onChange={(e) => setRegularHoursWorked(e.target.value)}
+        placeholder="Regular Hours"
+        style={{ width: "100%", padding: 10 }}
+      />
 
-          <input
-            placeholder="Job Description"
-            value={entry.jobDescription}
-            onChange={(e) => updateEntry(entry.id, "jobDescription", e.target.value)}
-            style={{ width: "100%", marginBottom: 5 }}
-          />
+      <input
+        value={overtimeHoursWorked}
+        onChange={(e) => setOvertimeHoursWorked(e.target.value)}
+        placeholder="Overtime Hours"
+        style={{ width: "100%", padding: 10 }}
+      />
 
-          <input
-            placeholder="Hours"
-            value={entry.hours}
-            onChange={(e) => updateEntry(entry.id, "hours", e.target.value)}
-            style={{ width: "100%", marginBottom: 5 }}
-          />
+      <input
+        value={callOutHours}
+        onChange={(e) => setCallOutHours(e.target.value)}
+        placeholder="Call Out Hours"
+        style={{ width: "100%", padding: 10 }}
+      />
 
-          <input
-            placeholder="Equipment Used"
-            value={entry.equipmentUsed}
-            onChange={(e) => updateEntry(entry.id, "equipmentUsed", e.target.value)}
-            style={{ width: "100%", marginBottom: 5 }}
-          />
+      <input
+        value={totalHoursWorked}
+        readOnly
+        placeholder="Total Hours"
+        style={{ width: "100%", padding: 10, background: "#eee" }}
+      />
 
-          <button onClick={() => removeEntry(entry.id)}>Remove</button>
-        </div>
-      ))}
+      <h3>Job Entries</h3>
 
-      <button onClick={addEntry} style={{ marginRight: 10 }}>
-        Add Job
-      </button>
+      {entries.map(entry => {
+        const departmentJobs = jobCatalog.filter(j => j.department === entry.department);
 
-      <button onClick={submitRecord}>
-        Submit
-      </button>
+        return (
+          <div key={entry.id} style={{ border: "1px solid #ccc", padding: 10, marginBottom: 10 }}>
+            <select onChange={(e) => updateEntry(entry.id, "department", e.target.value)}>
+              <option value="">Department</option>
+              {departments.map(d => <option key={d}>{d}</option>)}
+            </select>
 
-      <hr style={{ margin: "20px 0" }} />
+            <select onChange={(e) => updateEntry(entry.id, "jobDescription", e.target.value)}>
+              <option value="">Job Description</option>
+              {departmentJobs.map(j => <option key={j.jobDescription}>{j.jobDescription}</option>)}
+            </select>
 
-      <h3>History</h3>
-      {submittedRecords.map((r, i) => (
-        <div key={i}>
-          {r.employeeName} - {r.workDate}
-        </div>
-      ))}
+            <input placeholder="Hours" onChange={(e) => updateEntry(entry.id, "hours", e.target.value)} />
+            <input placeholder="Equipment" onChange={(e) => updateEntry(entry.id, "equipmentUsed", e.target.value)} />
+            <textarea placeholder="Notes" onChange={(e) => updateEntry(entry.id, "notes", e.target.value)} />
+
+            <button onClick={() => removeEntry(entry.id)}>Remove</button>
+          </div>
+        );
+      })}
+
+      <button onClick={addEntry}>Add Job</button>
+      <button onClick={submitRecord}>Submit</button>
+
+      <div>{statusMessage}</div>
     </div>
   );
 }
